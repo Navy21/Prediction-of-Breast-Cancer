@@ -1,0 +1,217 @@
+# Used jupyter notebook for executing code
+
+get_ipython().magic('matplotlib inline')
+
+import numpy as np
+import pandas as pd # Data frames
+import matplotlib.pyplot as plt # Visuals
+import seaborn as sns # Danker visuals
+from sklearn.model_selection import train_test_split 
+from sklearn.model_selection import KFold, cross_val_score 
+from sklearn.neighbors import KNeighborsClassifier 
+from sklearn.ensemble import RandomForestClassifier 
+from sklearn.neural_network import MLPClassifier 
+from sklearn.metrics import roc_curve # ROC Curves
+from sklearn.metrics import auc # Calculating AUC for ROC's!
+from urllib.request import urlopen
+from sklearn.metrics import f1_score,confusion_matrix
+
+pd.set_option('display.max_columns', 500) 
+plt.style.use('ggplot') 
+
+
+# In[4]:
+
+UCI_data_URL = 'https://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer-wisconsin/wdbc.data'
+
+names = ['id_number', 'diagnosis', 'radius_mean', 
+         'texture_mean', 'perimeter_mean', 'area_mean', 
+         'smoothness_mean', 'compactness_mean', 'concavity_mean',
+         'concave_points_mean', 'symmetry_mean', 
+         'fractal_dimension_mean', 'radius_se', 'texture_se', 
+         'perimeter_se', 'area_se', 'smoothness_se', 
+         'compactness_se', 'concavity_se', 'concave_points_se', 
+         'symmetry_se', 'fractal_dimension_se', 
+         'radius_worst', 'texture_worst', 'perimeter_worst',
+         'area_worst', 'smoothness_worst', 
+         'compactness_worst', 'concavity_worst', 
+         'concave_points_worst', 'symmetry_worst', 
+         'fractal_dimension_worst'] 
+
+breast_cancer_dataset = pd.read_csv(urlopen(UCI_data_URL), names=names)
+breast_cancer_dataset.set_index(['id_number'], inplace = True) 
+namesInd = names[2:] 
+
+
+# In[5]:
+
+breast_cancer_dataset.head()
+print("Here's the dimensions of our data frame:\n", 
+     breast_cancer_dataset.shape)
+print("Here's the data types of our columns:\n",
+     breast_cancer_dataset.dtypes)
+
+
+# In[6]:
+
+# Converted diagnosis to binary
+breast_cancer_dataset['diagnosis'] = breast_cancer_dataset['diagnosis']  .map({'M':1, 'B':0})
+breast_cancer_dataset['diagnosis'].value_counts()
+
+
+# In[10]:
+
+def distribution_diagnosis(data_frame, column):
+    n = 0
+    j = 0
+    perc_malignant = 0 
+    perc_begnin = 0
+    for column in data_frame[column]:
+        if (column == 1):
+            j += 1
+        elif (column == 0):
+            n += 1
+    perc_malignant = (j/len(data_frame)) * 100
+    perc_begnin = (n/len(data_frame)) * 100
+    print("The percentage of Malignant Diagnoses is: {0:.3f}%"          .format(perc_malignant))
+    print("The percentage of Begnin Diagnoses is: {0:.3f}%"          .format(perc_begnin))
+
+
+# In[11]:
+
+distribution_diagnosis(breast_cancer_dataset, 'diagnosis')
+
+
+# In[12]:
+
+#Basic Statistics of each input variable
+breast_cancer_dataset.describe()
+
+
+# In[13]:
+
+#Box plot of unscaled data
+f, ax = plt.subplots(figsize=(11, 15))
+
+ax.set_axis_bgcolor('#fafafa')
+ax.set(xlim=(-.05, 50))
+plt.ylabel('Dependent Variables')
+plt.title("Box Plot of unscaled Data Set")
+ax = sns.boxplot(data = breast_cancer_dataset, 
+  orient = 'h', 
+  palette = 'Set2')
+
+
+# In[15]:
+
+# Normalization 
+def normalize_df(frame):
+    breast_cancerNorm = pd.DataFrame()
+    for item in frame:
+        if item in frame.select_dtypes(include=[np.float]):
+            breast_cancerNorm[item] = ((frame[item] - frame[item].min()) / 
+            (frame[item].max() - frame[item].min()))
+        else: 
+            breast_cancerNorm[item] = frame[item]
+    return breast_cancerNorm
+
+
+# In[16]:
+
+breast_cancerNorm = normalize_df(breast_cancer_dataset)
+breast_cancerNorm.describe()
+
+
+# In[17]:
+
+#Box plot of normalized data
+f, ax = plt.subplots(figsize=(11, 15))
+
+ax.set_axis_bgcolor('#fafafa')
+plt.title("Box Plot of Transformed Data Set (Breast Cancer Wisconsin Data Set)")
+ax.set(xlim=(-.05, 1.05))
+ax = sns.boxplot(data = breast_cancerNorm[1:29], 
+  orient = 'h', 
+  palette = 'Set2')
+
+
+# In[19]:
+
+#Violin Plots for first 10 variables
+x= breast_cancerNorm.ix[:, breast_cancerNorm.columns != 'diagnosis']
+y = breast_cancerNorm.ix[:, breast_cancerNorm.columns == 'diagnosis']
+data_dia = y
+data = x
+data = pd.concat([data_dia,data.iloc[:,0:10]],axis=1)
+data = pd.melt(data,id_vars="diagnosis",
+                    var_name="features",
+                    value_name='value')
+plt.figure(figsize=(10,10))
+sns.violinplot(x="features", y="value", hue="diagnosis", data=data,split=True, inner="quart")
+plt.xticks(rotation=90)
+
+
+# In[20]:
+
+#Violin Plots for first variables 11 to 20
+x= breast_cancerNorm.ix[:, breast_cancerNorm.columns != 'diagnosis']
+y = breast_cancerNorm.ix[:, breast_cancerNorm.columns == 'diagnosis']
+data_dia = y
+data = x
+data = pd.concat([data_dia,data.iloc[:,10:20]],axis=1)
+data = pd.melt(data,id_vars="diagnosis",
+                    var_name="features",
+                    value_name='value')
+plt.figure(figsize=(10,10))
+sns.violinplot(x="features", y="value", hue="diagnosis", data=data,split=True, inner="quart")
+plt.xticks(rotation=90)
+
+
+# In[21]:
+
+#Violin Plots for first variables 21 to 30
+x= breast_cancerNorm.ix[:, breast_cancerNorm.columns != 'diagnosis']
+y = breast_cancerNorm.ix[:, breast_cancerNorm.columns == 'diagnosis']
+data_dia = y
+data = x
+data = pd.concat([data_dia,data.iloc[:,20:31]],axis=1)
+data = pd.melt(data,id_vars="diagnosis",
+                    var_name="features",
+                    value_name='value')
+plt.figure(figsize=(10,10))
+sns.violinplot(x="features", y="value", hue="diagnosis", data=data,split=True, inner="quart")
+plt.xticks(rotation=90)
+
+
+# In[22]:
+
+#Pearson Correlation Matrix
+corr = breast_cancer_dataset.corr(method = 'pearson') # Correlation Matrix
+
+f, ax = plt.subplots(figsize=(11, 9))
+cmap = sns.diverging_palette(10, 275, as_cmap=True)
+sns.heatmap(corr,  cmap=cmap,square=True, 
+            xticklabels=True, yticklabels=True,
+            linewidths=.5, cbar_kws={"shrink": .5}, ax=ax)
+
+
+# In[23]:
+
+#feature Selection
+drop_list1 = ['perimeter_mean','radius_mean','compactness_mean','concave_points_mean','radius_se','perimeter_se',
+              'radius_worst','perimeter_worst','compactness_worst','concave_points_worst','compactness_se','concave_points_se',
+              'texture_worst','area_worst']
+feat_select = breast_cancer_dataset.drop(drop_list1,axis = 1 )         
+feat_select.head()
+
+
+# In[24]:
+
+# Splitting dataset- 80% training and 20% test dataset
+train, test = train_test_split(feat_select, 
+                               test_size = 0.20, 
+                               random_state = 42)
+training_set = train.ix[:, train.columns != 'diagnosis']
+class_set = train.ix[:, train.columns == 'diagnosis']
+test_set = test.ix[:, test.columns != 'diagnosis']
+test_class_set = test.ix[:, test.columns == 'diagnosis']
