@@ -1,0 +1,325 @@
+# Gaussian Naive Bayes Algorithm
+
+from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import accuracy_score
+import time
+
+start = time.time()
+
+clf = GaussianNB()
+clf.fit(training_set, class_set)
+
+prediction = clf.predict(test_set)
+accuracy_all=[]
+end = time.time()
+#10-Fold Cross Validation
+n = KFold(n_splits=10)
+
+scores = cross_val_score(clf, 
+                         test_set, 
+                         test_class_set['diagnosis'], 
+                         cv = n)
+print("Cross Validation Accuracy: {0: 0.2f} (+/- {1: 0.2f})"      .format(scores.mean(), scores.std() / 2))
+print("Accuracy of the test set: {0:.2%}".format(accuracy_score(prediction, test_class_set)))
+print("Execution time: {0:.5} seconds \n".format(end-start))
+#ROC Curve
+fpr3, tpr3, _ = roc_curve(prediction, test_class_set)
+auc_nb = auc(fpr3, tpr3)
+plt.plot(fpr3,tpr3,label='NB ROC curve (area={0: .3f})'.format(auc_nb),color='blue',linewidth=1)
+plt.show()
+print("The area under ROC curve for NB:\n {0:.3f}"      .format(auc_nb))
+#F1 Scores for the test set:
+F1score=f1_score(test_class_set.values,prediction,pos_label=1)
+print("The F1 score for the test set is :\n {0:.4f}"      .format(F1score))
+#confusion matrix
+conf_matrix = confusion_matrix(test_class_set,prediction)
+sns.heatmap(conf_matrix,annot=True,fmt="d")
+
+
+# In[27]:
+
+#train set evaluations for Gaussian NB
+prediction_train_nb = clf.predict(training_set)
+#F1 Scores for the test set:
+F1score=f1_score(class_set.values,prediction_train_nb,pos_label=1)
+print("The F1 score for the train set is :\n {0:.4f}".format(F1score))
+#confusion matrix
+conf_matrix = confusion_matrix(class_set,prediction_train_nb)
+sns.heatmap(conf_matrix,annot=True,fmt="d")
+#accuracy
+accuracy=clf.score(training_set, class_set['diagnosis'])
+print("The accuracy for the train set is :\n {0:.4f}".format(accuracy))
+
+
+# In[33]:
+
+#Linear SVC Algorithm
+
+from sklearn.svm import LinearSVC
+start = time.time()
+
+clf_svc = LinearSVC()
+clf_svc.fit(training_set, class_set)
+prediction_svc = clf_svc.predict(test_set)
+end = time.time()
+#10-Fold Cross Validation
+n = KFold(n_splits=10)
+
+scores = cross_val_score(clf_svc, 
+                         test_set, 
+                         test_class_set['diagnosis'], 
+                         cv = n)
+print("Cross Validation Accuracy: {0: 0.2f} (+/- {1: 0.2f})"      .format(scores.mean(), scores.std() / 2))
+print("LinearSVC Accuracy of the test set: {0:.2%}".format(accuracy_score(prediction, test_class_set)))
+print("Execution time: {0:.5} seconds \n".format(end-start))
+#ROC Curve
+fpr9, tpr9, _ = roc_curve(prediction_svc, test_class_set)
+auc_svc = auc(fpr9, tpr9)
+plt.plot(fpr9,tpr9,label='NB ROC curve (area={0: .3f})'.format(auc_svc),color='blue',linewidth=1)
+plt.show()
+print("The area under ROC curve for Linear SVC:\n {0:.3f}"      .format(auc_svc))
+#confusion matrix
+conf_matrix = confusion_matrix(test_class_set,prediction_svc)
+sns.heatmap(conf_matrix,annot=True,fmt="d")
+#F1 Scores for the test set:
+F1score=f1_score(test_class_set.values,prediction_svc,pos_label=1)
+print("The F1 score for the test set is :\n {0:.4f}"      .format(F1score))
+
+
+# In[31]:
+
+#train set evaluations for Linear SVC
+prediction_train_svc = clf_svc.predict(training_set)
+#F1 Scores for the test set:
+F1score=f1_score(class_set.values,prediction_train_svc,pos_label=1)
+print("The F1 score for the train set is :\n {0:.4f}"      .format(F1score))
+#confusion matrix
+conf_matrix = confusion_matrix(class_set,prediction_train_svc)
+sns.heatmap(conf_matrix,annot=True,fmt="d")
+#accuracy
+accuracy=clf_svc.score(training_set, class_set['diagnosis'])
+print("The accuracy for the train set is :\n {0:.4f}"      .format(accuracy))
+
+
+# In[34]:
+
+#Random Forest Algorithm
+start = time.time()
+fit_RF = RandomForestClassifier(random_state = 42, 
+    bootstrap=True,
+    max_depth=4,
+    criterion='entropy',
+    n_estimators = 500)
+fit_RF.fit(training_set, class_set['diagnosis'])
+predictions_RF = fit_RF.predict(test_set)
+end=time.time()
+fit_RF.fit(training_set, class_set['diagnosis'])
+print("Execution time: {0:.5} seconds \n".format(end-start))
+
+
+# In[35]:
+
+#feature importance in Random Forest
+importancesRF = fit_RF.feature_importances_
+indicesRF = np.argsort(importancesRF)[::-1]
+indicesRF
+# Print the feature ranking
+print("Feature ranking:")
+
+for f in range(16):
+    i = f
+    print("%d. The feature '%s'     has a Information Gain of %f" % (f + 1,
+                namesInd[indicesRF[i]],
+                importancesRF[indicesRF[f]]))
+
+
+# In[36]:
+
+indRf = sorted(importancesRF) # Sort by Decreasing order
+index = np.arange(16)
+index
+
+
+# In[37]:
+
+feature_space = []
+for i in range(15, -1, -1):
+    feature_space.append(namesInd[indicesRF[i]])
+f, ax = plt.subplots(figsize=(11, 11))
+
+ax.set_axis_bgcolor('#fafafa')
+plt.title('Feature importances for Random Forest Model')
+plt.barh(index, indRf,
+        align="center", 
+        color = '#875FDB')
+
+plt.yticks(index, feature_space)
+plt.ylim(-1, 16)
+plt.xlim(0, 0.15)
+plt.xlabel('Information Gain')
+plt.ylabel('Feature')
+
+plt.show()
+
+
+# In[38]:
+
+n = KFold(n_splits=10)
+scores = cross_val_score(fit_RF, 
+                         test_set, 
+                         test_class_set['diagnosis'], 
+                         cv = n)
+
+print("Accuracy: {0: 0.2f} (+/- {1: 0.2f})"      .format(scores.mean(), scores.std() / 2))
+predictions_RF = fit_RF.predict(test_set)
+accuracy_RF = fit_RF.score(test_set, test_class_set['diagnosis'])
+
+print("Here is our mean accuracy of RF on the test set:\n {0:.3f}"      .format(accuracy_RF))
+fpr2, tpr2, _ = roc_curve(predictions_RF, 
+                          test_class_set)
+auc_rf = auc(fpr2, tpr2)
+#ROC curve
+auc_rf = auc(fpr2, tpr2)
+plt.plot(fpr2,tpr2,label='RF ROC curve (area={0: .3f})'.format(auc_rf),color='red',linewidth=1)
+plt.show()
+print("The area under ROC curve for RFClassifier:\n {0:.3f}"      .format(auc_rf))
+#F1 Scores for the test set:
+F1score=f1_score(test_class_set.values,predictions_RF,pos_label=1)
+print("The F1 score for the test set is :\n {0:.4f}"      .format(F1score))
+#confusion matrix
+conf_matrix = confusion_matrix(test_class_set,predictions_RF)
+sns.heatmap(conf_matrix,annot=True,fmt="d")
+
+
+# In[39]:
+
+#train set evaluations for  RF
+prediction_train_rf = fit_RF.predict(training_set)
+#F1 Scores for the test set:
+F1score=f1_score(class_set.values,prediction_train_rf,pos_label=1)
+print("The F1 score for the train set is :\n {0:.4f}"      .format(F1score))
+#confusion matrix
+conf_matrix = confusion_matrix(class_set,prediction_train_rf)
+sns.heatmap(conf_matrix,annot=True,fmt="d")
+#accuracy
+accuracy=fit_RF.score(training_set, class_set['diagnosis'])
+print("The accuracy for the train set is :\n {0:.4f}"      .format(accuracy))
+
+
+# In[40]:
+
+#AdaBoost Classifier
+
+from sklearn.ensemble import AdaBoostClassifier
+start = time.time()
+clf_ada = AdaBoostClassifier(algorithm='SAMME')
+clf_ada.fit(training_set, class_set)
+prediction = clf_ada.predict(test_set)
+end = time.time()
+print("Execution time: {0:.5} seconds \n".format(end-start))
+#10-Fold Cross Validation
+n = KFold(n_splits=10)
+
+scores = cross_val_score(clf_ada, 
+                         test_set, 
+                         test_class_set['diagnosis'], 
+                         cv = n)
+print("Cross Validation Accuracy: {0: 0.2f} (+/- {1: 0.2f})"      .format(scores.mean(), scores.std() / 2))
+print("AdaboostClassifier Accuracy: {0:.2%}".format(accuracy_score(prediction, test_class_set)))
+#ROC curve
+fpr4, tpr4, _ = roc_curve(prediction, test_class_set)
+auc_ada = auc(fpr4, tpr4)
+plt.plot(fpr4,tpr4,label='Adaboost ROC curve (area={0: .3f})'.format(auc_ada),color='green',linewidth=1)
+plt.show()
+print("The area under ROC curve for AdaBoostClassifier:\n {0:.3f}"      .format(auc_ada))
+#F1 Scores for the test set:
+F1score=f1_score(test_class_set.values,prediction,pos_label=1)
+print("The F1 score for the test set is :\n {0:.4f}"      .format(F1score))
+#confusion matrix
+conf_matrix = confusion_matrix(test_class_set,prediction)
+sns.heatmap(conf_matrix,annot=True,fmt="d")
+
+
+# In[41]:
+
+#train set evaluations for adaboost
+prediction_train_ada = clf_ada.predict(training_set)
+#F1 Scores for the test set:
+F1score=f1_score(class_set.values,prediction_train_ada,pos_label=1)
+print("The F1 score for the train set is :\n {0:.4f}"      .format(F1score))
+#confusion matrix
+conf_matrix = confusion_matrix(class_set,prediction_train_ada)
+sns.heatmap(conf_matrix,annot=True,fmt="d")
+#accuracy
+accuracy=clf_ada.score(training_set, class_set['diagnosis'])
+print("The accuracy for the train set is :\n {0:.4f}"      .format(accuracy))
+
+
+# In[42]:
+
+# K-Nearest neighbours
+
+#Finding the optimal K
+myKs = []
+for j in range(0, 50):
+    if (j % 2 != 0):
+        myKs.append(j)
+
+cross_vals = []
+for k in myKs:
+    knn = KNeighborsClassifier(n_neighbors=k)
+    scores = cross_val_score(knn,
+                             training_set, 
+                             class_set['diagnosis'], 
+                             cv = 10, 
+                             scoring='accuracy')
+    cross_vals.append(scores.mean())
+
+MSE = [1 - x for x in cross_vals]
+optimal_k = myKs[MSE.index(min(MSE))]
+print("Optimal K is {0}".format(optimal_k))
+
+
+# In[46]:
+
+start=time.time()
+fit_knn = KNeighborsClassifier(n_neighbors=19)
+fit_knn.fit(training_set, class_set['diagnosis'])
+predictions = fit_knn.predict(test_set)
+end=time.time()
+print("Execution time: {0:.5} seconds \n".format(end-start))
+n = KFold(n_splits=10)
+
+scores = cross_val_score(fit_knn, 
+                         test_set, 
+                         test_class_set['diagnosis'], 
+                         cv = n)
+print("Cross Validation Accuracy: {0: 0.2f} (+/- {1: 0.2f})"      .format(scores.mean(), scores.std() / 2))
+print("Here is our accuracy for our test set: {0: .3f}"  .format(accuracy))
+#ROC
+fpr, tpr, _ = roc_curve(predictions, test_class_set)
+auc_knn = auc(fpr, tpr)
+plt.plot(fpr,tpr,label='knn ROC curve (area={0: .3f})'.format(auc_knn),color='orange',linewidth=1)
+plt.show()
+print("The area under ROC curve for knn-Classifier:\n {0:.3f}"      .format(auc_knn))
+#F1 Scores for the test set:
+F1score=f1_score(test_class_set.values,predictions,pos_label=1)
+print("The F1 score for the test set is :\n {0:.4f}"      .format(F1score))
+#confusion matrix
+conf_matrix = confusion_matrix(test_class_set,predictions)
+sns.heatmap(conf_matrix,annot=True,fmt="d")
+
+
+# In[44]:
+
+#train set evaluations for knn
+prediction_train_knn = fit_knn.predict(training_set)
+#F1 Scores for the test set:
+F1score=f1_score(class_set.values,prediction_train_knn,pos_label=1)
+print("The F1 score for the train set is :\n {0:.4f}"      .format(F1score))
+#confusion matrix
+conf_matrix = confusion_matrix(class_set,prediction_train_knn)
+sns.heatmap(conf_matrix,annot=True,fmt="d")
+#accuracy
+accuracy=fit_knn.score(training_set, class_set['diagnosis'])
+print("The accuracy for the train set is :\n {0:.4f}"      .format(accuracy))
